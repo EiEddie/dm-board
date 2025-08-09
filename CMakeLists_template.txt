@@ -48,13 +48,17 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
+set(ROOT_INCLUDES ${includes})
+include_directories(${ROOT_INCLUDES})
+add_library(root_includes INTERFACE)
+target_include_directories(root_includes INTERFACE ${ROOT_INCLUDES})
+
+add_compile_definitions(${defines})
+
 # Load BSP submodule
 add_subdirectory(bsp)
+target_link_libraries(bsp PUBLIC root_includes)
 message(STATUS "BSP loaded")
-
-include_directories(${includes})
-
-add_definitions(${defines})
 
 file(GLOB_RECURSE SOURCES ${sources})
 
