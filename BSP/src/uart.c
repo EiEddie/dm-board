@@ -8,6 +8,7 @@
 
 
 static UART_HandleTypeDef *_handles[UART_SIZE] = {NULL};
+static uint8_t _bsp_uart_ready = 0;
 
 static uint8_t _uart_tx_buf[UART_BUFFER_SIZE];
 static uint8_t _uart_rx_buf[UART_SIZE][UART_BUFFER_SIZE];

@@ -19,9 +19,6 @@ typedef enum {
 typedef void (*bsp_uart_cb)(bsp_uart_e uart, uint8_t *data, uint16_t len);
 
 
-static uint8_t _bsp_uart_ready = 0;
-
-
 /**
  * @brief 将对应的串口绑定到 `bsp`.
  *
