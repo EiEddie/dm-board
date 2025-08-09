@@ -8,7 +8,7 @@
 
 
 static UART_HandleTypeDef *_handles[UART_SIZE] = {NULL};
-static uint8_t _bsp_uart_ready = 0;
+static uint8_t _bsp_uart_ready                 = 0;
 
 static uint8_t _uart_tx_buf[UART_BUFFER_SIZE];
 static uint8_t _uart_rx_buf[UART_SIZE][UART_BUFFER_SIZE];
@@ -87,7 +87,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *h, uint16_t l)
 {
   for (size_t i = 0; i < UART_SIZE; i++) {
     if (h == _handles[i]) {
-      if (_callback[i] != NULL) _callback[i](i, _uart_rx_buf[i], l);
+      if (_callback[i] != NULL)
+        _callback[i](i, _uart_rx_buf[i], l);
       memset(_uart_rx_buf[i], 0, sizeof(uint8_t) * l);
       HAL_UARTEx_ReceiveToIdle_DMA(h, _uart_rx_buf[i], UART_BUFFER_SIZE);
       __HAL_DMA_DISABLE_IT(h->hdmarx, DMA_IT_HT);
@@ -99,7 +100,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *h, uint16_t l)
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *h)
 {
   for (int i = 0; i < UART_SIZE; i++) {
-    if (_handles[i] == NULL) continue;
+    if (_handles[i] == NULL)
+      continue;
     if (h == _handles[i]) {
       HAL_UARTEx_ReceiveToIdle_DMA(h, _uart_rx_buf[i], UART_BUFFER_SIZE);
       __HAL_DMA_DISABLE_IT(h->hdmarx, DMA_IT_HT);

@@ -15,7 +15,8 @@ void bsp_panic(const char *file, uint32_t line);
 
 #define BSP_ASSERT(arg)                                                        \
   do {                                                                         \
-    if (!(arg)) bsp_panic(__FILE__, __LINE__);                                 \
+    if (!(arg))                                                                \
+      bsp_panic(__FILE__, __LINE__);                                           \
   } while (0)
 
 

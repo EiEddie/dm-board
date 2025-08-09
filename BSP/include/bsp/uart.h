@@ -42,11 +42,13 @@ uint8_t bsp_uart_status();
 
 void bsp_uart_send(bsp_uart_e uart, uint8_t *data, uint16_t len);
 
-void bsp_uart_send_block(bsp_uart_e uart, uint8_t *data, uint16_t len, uint32_t timeout);
+void bsp_uart_send_block(bsp_uart_e uart, uint8_t *data, uint16_t len,
+                         uint32_t timeout);
 
 void bsp_uart_printf(bsp_uart_e uart, const char *fmt, ...);
 
-void bsp_uart_printf_block(bsp_uart_e uart, uint32_t timeout, const char *fmt, ...);
+void bsp_uart_printf_block(bsp_uart_e uart, uint32_t timeout, const char *fmt,
+                           ...);
 
 void bsp_uart_set_callback(bsp_uart_e uart, bsp_uart_cb cb);
 
