@@ -20,6 +20,13 @@ void bsp_uart_bind()
   _handles[E_UART_3]  = &huart1;
   _handles[E_UART_7]  = &huart7;
   _handles[E_UART_10] = &huart10;
+  _bsp_uart_ready     = 1;
+}
+
+
+uint8_t bsp_uart_status()
+{
+  return _bsp_uart_ready;
 }
 
 

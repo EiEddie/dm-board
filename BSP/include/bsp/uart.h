@@ -19,8 +19,11 @@ typedef enum {
 typedef void (*bsp_uart_cb)(bsp_uart_e uart, uint8_t *data, uint16_t len);
 
 
+static uint8_t _bsp_uart_ready = 0;
+
+
 /**
- * @param 将对应的串口绑定到 `bsp`.
+ * @brief 将对应的串口绑定到 `bsp`.
  *
  * 绑定后的标识符按原理图编号.
  *
@@ -32,6 +35,13 @@ typedef void (*bsp_uart_cb)(bsp_uart_e uart, uint8_t *data, uint16_t len);
  * @endverbatim
  */
 void bsp_uart_bind();
+
+/**
+ * @brief 获取当前串口状态
+ * @retval  0 串口已绑定
+ * @retval -1 串口未绑定, 不可使用
+ */
+uint8_t bsp_uart_status();
 
 void bsp_uart_send(bsp_uart_e uart, uint8_t *data, uint16_t len);
 
