@@ -33,7 +33,6 @@ uint8_t bsp_uart_status()
 
 void bsp_uart_send(bsp_uart_e uart, uint8_t *data, uint16_t len)
 {
-  volatile HAL_StatusTypeDef err;
   if (_handles[uart]->hdmatx) {
     HAL_UART_Transmit_DMA(_handles[uart], data, len);
   } else {
@@ -45,11 +44,7 @@ void bsp_uart_send(bsp_uart_e uart, uint8_t *data, uint16_t len)
 void bsp_uart_send_block(bsp_uart_e uart, uint8_t *data, uint16_t len,
                          uint32_t timeout)
 {
-  if (_handles[uart]->hdmatx) {
-    HAL_UART_Transmit_DMA(_handles[uart], data, len);
-  } else {
-    HAL_UART_Transmit(_handles[uart], data, len, timeout);
-  }
+  HAL_UART_Transmit(_handles[uart], data, len, timeout);
 }
 
 
