@@ -1,6 +1,6 @@
 #include <bsp/led.h>
 
-#include "spi.h"
+#include <spi.h>
 
 
 #define WS2812_HIGH 0xf0

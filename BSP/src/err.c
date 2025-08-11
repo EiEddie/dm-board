@@ -1,7 +1,7 @@
 #include <bsp/err.h>
 
+#include <main.h>
 #include <bsp/led.h>
-#include "main.h"
 
 
 void bsp_panic(const char *file, uint32_t line)

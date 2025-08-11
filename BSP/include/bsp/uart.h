@@ -1,8 +1,9 @@
 #ifndef BSP_INCLUDE_BSP_UART_H_
 #define BSP_INCLUDE_BSP_UART_H_
 
-#include "usart.h"
 #include <stdint.h>
+
+#include <usart.h>
 
 
 #define UART_BUFFER_SIZE 1024
