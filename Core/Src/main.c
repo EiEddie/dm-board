@@ -30,6 +30,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <bsp/uart.h>
+#include <bsp/key.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +64,9 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  _bsp_key_exti_callback(GPIO_Pin);
+}
 /* USER CODE END 0 */
 
 /**
@@ -109,6 +112,7 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   bsp_uart_bind();
+  bsp_key_init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -242,7 +246,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  _bsp_key_tim_callback(htim);
   /* USER CODE END Callback 1 */
 }
 
