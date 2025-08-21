@@ -106,6 +106,7 @@ int main(void)
   MX_RNG_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   bsp_uart_bind();
   /* USER CODE END 2 */
