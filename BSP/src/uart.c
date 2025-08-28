@@ -10,8 +10,13 @@
 static UART_HandleTypeDef *_handles[UART_SIZE] = {NULL};
 static uint8_t _bsp_uart_ready                 = 0;
 
+// clang-format off
+__attribute__((section(".ram_d1"))) \
 static uint8_t _uart_tx_buf[UART_BUFFER_SIZE];
+
+__attribute__((section(".ram_d1"))) \
 static uint8_t _uart_rx_buf[UART_SIZE][UART_BUFFER_SIZE];
+// clang-format on
 
 static bsp_uart_cb _callback[UART_SIZE];
 
@@ -52,7 +57,7 @@ void bsp_uart_printf(bsp_uart_e uart, const char *fmt, ...)
 {
   va_list ap;
   va_start(ap, fmt);
-  uint16_t len = vsnprintf(_uart_tx_buf, UART_BUFFER_SIZE, fmt, ap);
+  uint16_t len = vsnprintf((char *)_uart_tx_buf, UART_BUFFER_SIZE, fmt, ap);
   va_end(ap);
   bsp_uart_send(uart, _uart_tx_buf, len);
 }
@@ -63,7 +68,7 @@ void bsp_uart_printf_block(bsp_uart_e uart, uint32_t timeout, const char *fmt,
 {
   va_list ap;
   va_start(ap, fmt);
-  uint16_t len = vsnprintf(_uart_tx_buf, UART_BUFFER_SIZE, fmt, ap);
+  uint16_t len = vsnprintf((char *)_uart_tx_buf, UART_BUFFER_SIZE, fmt, ap);
   va_end(ap);
   bsp_uart_send_block(uart, _uart_tx_buf, len, timeout);
 }

@@ -240,6 +240,15 @@ SECTIONS
     . = ALIGN(8);
   } >DTCMRAM
 
+  /* User controlled RAM_D1 section */
+  .ram_d1 (NOLOAD) :
+  {
+    . = ALIGN(4);
+    *(.ram_d1)       /* variables explicitly put in RAM_D1 */
+    *(.ram_d1*)      /* allow wildcards like .ram_d1.mydata */
+    . = ALIGN(4);
+  } >RAM_D1
+
 
 
   /* Remove information from the standard libraries */
