@@ -30,7 +30,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 3. 在 `<dir>` 内新建一个 `CMakeLists.txt`, 内容模板如下:
 ```cmake
 # 将所有 <name> 替换为你的组件名
-# 共有 5 处需要替换, 请仔细核对
+# 共有 6 处需要替换, 请仔细核对
 
 add_library(comp_<name> STATIC
   src/... # 此处放置你的源代码文件
@@ -42,7 +42,7 @@ target_include_directories(comp_<name>
   $<INSTALL_INTERFACE:include/comp/<name>>
 )
 
-target_link_libraries(comp_aaa PUBLIC comp_public_includes)
+target_link_libraries(comp_<name> PUBLIC comp_public_includes)
 # 此处可以编写依赖说明
 
 add_library(comp::<name> ALIAS comp_<name>)
