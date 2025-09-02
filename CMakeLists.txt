@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
 
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
 
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
@@ -42,6 +36,9 @@ add_subdirectory(bsp)
 target_link_libraries(bsp PUBLIC stm32cubemx)
 message(STATUS "BSP loaded")
 
+# Load Components
+add_subdirectory(Components)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -67,8 +64,8 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
-	m # math
     stm32cubemx
-    # Add user defined libraries
-    bsp
+    bsp m
+	# Components
+	# ...
 )
