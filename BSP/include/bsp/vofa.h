@@ -14,10 +14,13 @@
 inline static void bsp_vofa_send_f32(bsp_uart_e uart, const float *data,
                                      uint16_t len)
 {
-  const uint32_t CH_MAX = 128;
+#define CH_MAX 128
   BSP_ASSERT(len <= CH_MAX);
 
-  uint8_t buf[(CH_MAX + 1) * sizeof(float)];
+  // clang-format off
+  __attribute__((section(".ram_d1"))) \
+  static uint8_t buf[(CH_MAX + 1) * sizeof(float)];
+  // clang-format on
   uint32_t bytes = len * sizeof(float);
   memcpy(buf, data, bytes);
 
