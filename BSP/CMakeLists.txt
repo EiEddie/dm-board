@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.15)
 project(bsp LANGUAGES C CXX)
 
 file(GLOB_RECURSE BSP_SOURCES

@@ -10,5 +10,6 @@ target_include_directories(comp_math
 )
 
 target_link_libraries(comp_math PUBLIC comp_public_includes)
+target_link_libraries(comp_math PUBLIC m)
 
 add_library(comp::math ALIAS comp_math)

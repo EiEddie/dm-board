@@ -32,12 +32,22 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 # Load BSP submodule
-add_subdirectory(bsp)
-target_link_libraries(bsp PUBLIC stm32cubemx)
+add_subdirectory(BSP)
+target_link_libraries(bsp PUBLIC stm32cubemx m)
 message(STATUS "BSP loaded")
 
 # Load Components
 add_subdirectory(Components)
+
+# Include Apps
+add_subdirectory(App)
+# Import the dependencies
+target_link_libraries(app PUBLIC
+	bsp m
+	# Components
+	#...
+)
+message(STATUS "Apps imported")
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -64,8 +74,5 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
-    bsp m
-	# Components
-	# ...
+    stm32cubemx app
 )

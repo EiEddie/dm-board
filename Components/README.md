@@ -6,12 +6,15 @@
 ## 使用
 要在主项目中使用组件, 只需在根目录 `CMakeLists.txt` 里添加:
 ```cmake
-# Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME}
-  #...
+# Include Apps
+add_subdirectory(App)
+# Import the dependencies
+target_link_libraries(app PUBLIC
+  bsp m
   # Components
   comp::<name> # 在此处添加
 )
+message(STATUS "Apps imported")
 ```
 
 并在主项目对应位置按如下格式导入头文件:
