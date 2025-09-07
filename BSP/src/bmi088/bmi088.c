@@ -1,21 +1,13 @@
 #include "bmi088.h"
 
-#include <stm32h7xx.h>
+#include <memory.h>
 #include <gpio.h>
 #include <spi.h>
-
-#include <bsp/time.h>
 
 #include "bmi088_reg.h"
 
 
-#define BMI088_PORT                hspi2
-
-#define BMI088_COM_WAIT_US         150 ///< 与传感器通信等待时间
-#define BMI088_LONG_DELAY_MS       80  ///< 复位后长延时
-
-#define BMI088_WRITE_ACCEL_REG_NUM 6 ///< 初始化时读写加速度计寄存器数量
-#define BMI088_WRITE_GYRO_REG_NUM  6 ///< 初始化时读写陀螺仪寄存器数量
+#define BMI088_PORT hspi2
 
 /**
  * @brief 将原始值转为以 g 值表示的加速度
@@ -65,248 +57,108 @@
 
 
 /**
- * @brief SPI 读写一个字节
- * @note 必须在拉低片选的前提下
+ * @brief SPI 写一个字节
+ * @note 必须在拉低片选的前提下.
+ * @note 写入后最好延迟一段时间 (>= 2us).
  */
-inline static uint8_t spi_rw_byte(uint8_t tx)
+inline static void _write_reg(uint8_t reg, uint8_t val)
 {
-  uint8_t rx;
-  HAL_SPI_TransmitReceive(&BMI088_PORT, &tx, &rx, 1, UINT32_MAX);
-  return rx;
+  uint8_t tx[2];
+  tx[0] = reg & 0x7f;
+  tx[1] = val;
+  HAL_SPI_Transmit(&BMI088_PORT, tx, 2, HAL_MAX_DELAY);
 }
 
 
-/**
- * @brief SPI 读多个寄存器
- * @note 必须在拉低片选的前提下
- */
-inline static void spi_read_multi_reg(uint8_t reg, uint8_t *buf, uint32_t len)
+/// @brief 向加速度计写入数据
+inline static void write_acc_reg(uint8_t reg, uint8_t val)
 {
-  spi_rw_byte(reg | 0x80);
-  for (; len != 0; len--) {
-    *buf++ = spi_rw_byte(0x55);
-  }
-}
-
-
-/**
- * @brief SPI 写寄存器
- * @note 必须在拉低片选的前提下
- */
-inline static void spi_write_reg(uint8_t reg, uint8_t data)
-{
-  spi_rw_byte(reg);
-  spi_rw_byte(data);
-}
-
-
-/// @brief 读加速度计寄存器
-inline static uint8_t acc_read_reg(uint8_t reg)
-{
-  uint8_t val;
   ACCEL_CS_LOW();
-  spi_rw_byte(reg | 0x80);
-  spi_rw_byte(0x55);
-  val = spi_rw_byte(0x55);
+  _write_reg(reg, val);
   ACCEL_CS_HIGH();
-  return val;
 }
 
 
 /// @brief 从加速度计寄存器读多个数据
-inline static void acc_read_multi_reg(uint8_t reg, uint8_t *buf, uint32_t len)
+inline static void read_acc_reg(uint8_t reg, uint8_t *buf, uint32_t len)
 {
+  uint8_t addr = reg | 0x80;
+  uint8_t rx[len + 1];
+  memset(rx, 0, len + 1);
+
   ACCEL_CS_LOW();
-  // spi_rw_byte(reg | 0x80);
-  spi_read_multi_reg(reg, buf, len);
+  HAL_SPI_Transmit(&BMI088_PORT, &addr, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive(&BMI088_PORT, rx, len + 1, HAL_MAX_DELAY);
   ACCEL_CS_HIGH();
+
+  // 丢弃第一位脏数据
+  memcpy(buf, rx + 1, len);
 }
 
 
-/// @brief 写加速度计寄存器
-inline static void acc_write_reg(uint8_t reg, uint8_t data)
+/// @brief 向陀螺仪写入数据
+inline static void write_gyro_reg(uint8_t reg, uint8_t val)
 {
-  ACCEL_CS_LOW();
-  spi_write_reg(reg, data);
-  ACCEL_CS_HIGH();
-}
-
-
-/// @brief 读陀螺仪寄存器
-inline static uint8_t gyro_read_reg(uint8_t reg)
-{
-  uint8_t val;
   GYRO_CS_LOW();
-  spi_rw_byte(reg | 0x80);
-  val = spi_rw_byte(0x55);
+  _write_reg(reg, val);
   GYRO_CS_HIGH();
-  return val;
 }
 
 
 /// @brief 从陀螺仪寄存器读多个数据
-inline static void gyro_read_multi_reg(uint8_t reg, uint8_t *buf, uint32_t len)
+inline static void read_gyro_reg(uint8_t reg, uint8_t *buf, uint32_t len)
 {
+  uint8_t addr = reg | 0x80;
+
   GYRO_CS_LOW();
-  spi_read_multi_reg(reg, buf, len);
+  //  HAL_SPI_TransmitReceive(&BMI088_PORT, &tx, &tmp, 1, HAL_MAX_DELAY);
+  //  HAL_SPI_Receive(&BMI088_PORT, buf, len, HAL_MAX_DELAY);
+  HAL_SPI_Transmit(&BMI088_PORT, &addr, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive(&BMI088_PORT, buf, len, HAL_MAX_DELAY);
   GYRO_CS_HIGH();
 }
 
 
-/// @brief 写陀螺仪寄存器
-inline static void gyro_write_reg(uint8_t reg, uint8_t data)
+void bmi088_init(void)
 {
-  GYRO_CS_LOW();
-  spi_write_reg(reg, data);
-  GYRO_CS_HIGH();
-}
+  uint8_t tmp;
 
+  // 加速度计初始化
+  // 重置加速度计参数
+  write_acc_reg(BMI088_ACC_SOFTRESET, BMI088_ACC_SOFTRESET_VALUE);
+  HAL_Delay(50);
 
-inline static void dwt_init()
-{
-  if (!(DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk)) {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CYCCNT = 0;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-  }
-}
+  // 将加速度计转为 SPI 模式
+  // 加速度计上电后默认处于 I2C 模式,
+  // 通过一次 SPI 操作可以将其转为 SPI 模式
+  read_acc_reg(BMI088_ACC_CHIP_ID, &tmp, 1);
+  HAL_Delay(2);
 
+  // 将加速度计置于 NORMAL 模式
+  write_acc_reg(BMI088_ACC_PWR_CONF, 0x00);
+  HAL_Delay(2);
+  write_acc_reg(BMI088_ACC_PWR_CTRL, 0x04);
+  HAL_Delay(50);
 
-void delay_us_dwt(uint32_t us)
-{
-  uint64_t ticks = (uint64_t)us * (SystemCoreClock / 1000000ULL);
-  uint32_t start = DWT->CYCCNT;
-  while ((uint32_t)(DWT->CYCCNT - start) < (uint32_t)ticks) {
-    __NOP();
-  }
-}
+  // 显式指定加速度计量程为 +-3g
+  write_acc_reg(BMI088_ACC_RANGE, BMI088_ACC_RANGE_3G);
+  HAL_Delay(5);
 
-
-typedef struct {
-  uint8_t reg;
-  uint8_t val;
-  bmi088_err_t errno;
-} bmi088_reg_cfg_t;
-
-
-bmi088_err_t bmi088_accel_init()
-{
-  uint8_t id;
-
-  // 通信检查
-  id = acc_read_reg(BMI088_ACC_CHIP_ID);
-  UNUSED(id);
-  delay_us_dwt(BMI088_COM_WAIT_US);
-
-  // 软件复位
-  acc_write_reg(BMI088_ACC_SOFTRESET, BMI088_ACC_SOFTRESET_VALUE);
-  bsp_time_delay_block(BMI088_LONG_DELAY_MS);
-
-  // 再次读取 Chip ID
-  id = acc_read_reg(BMI088_ACC_CHIP_ID);
-  if (id != BMI088_ACC_CHIP_ID_VALUE) {
-    return BMI088_NO_SENSOR;
-  }
-
-  // 配置寄存器列表
-  // clang-format off
-  static const bmi088_reg_cfg_t accel_cfgs[BMI088_WRITE_ACCEL_REG_NUM] = {
-      {BMI088_ACC_PWR_CTRL, BMI088_ACC_ENABLE_ACC_ON,
-       BMI088_ACC_PWR_CTRL_ERROR},
-      {BMI088_ACC_PWR_CONF, BMI088_ACC_PWR_ACTIVE_MODE,
-       BMI088_ACC_PWR_CONF_ERROR},
-      {BMI088_ACC_CONF    , BMI088_ACC_NORMAL | BMI088_ACC_800_HZ | BMI088_ACC_CONF_MUST_Set,
-       BMI088_ACC_CONF_ERROR},
-      {BMI088_ACC_RANGE   , BMI088_ACC_RANGE_3G,
-       BMI088_ACC_RANGE_ERROR},
-      {BMI088_INT1_IO_CTRL, BMI088_ACC_INT1_IO_ENABLE | BMI088_ACC_INT1_GPIO_PP | BMI088_ACC_INT1_GPIO_LOW,
-       BMI088_INT1_IO_CTRL_ERROR},
-      {BMI088_INT_MAP_DATA, BMI088_ACC_INT1_DRDY_INTERRUPT,
-       BMI088_INT_MAP_DATA_ERROR}};
-  // clang-format on
-
-  // 写入配置并验证
-  for (int i = 0; i < BMI088_WRITE_ACCEL_REG_NUM; i++) {
-    acc_write_reg(accel_cfgs[i].reg, accel_cfgs[i].val);
-    delay_us_dwt(BMI088_COM_WAIT_US);
-    uint8_t verify = acc_read_reg(accel_cfgs[i].reg);
-    if (verify != accel_cfgs[i].val)
-      return accel_cfgs[i].errno;
-  }
-
-  return BMI088_NO_ERROR;
-}
-
-
-bmi088_err_t bmi088_gyro_init()
-{
-  uint8_t id;
-
-  // 通信检查
-  id = gyro_read_reg(BMI088_GYRO_CHIP_ID);
-  UNUSED(id);
-  delay_us_dwt(BMI088_COM_WAIT_US);
-
-  // 软件复位
-  gyro_write_reg(BMI088_GYRO_SOFTRESET, BMI088_GYRO_SOFTRESET_VALUE);
-  bsp_time_delay_block(BMI088_LONG_DELAY_MS);
-
-  // 再次读取 Chip ID
-  id = gyro_read_reg(BMI088_GYRO_CHIP_ID);
-  if (id != BMI088_GYRO_CHIP_ID_VALUE) {
-    return BMI088_NO_SENSOR;
-  }
-
-  // 配置寄存器表
-  // clang-format off
-  static const bmi088_reg_cfg_t gyro_cfgs[BMI088_WRITE_GYRO_REG_NUM] = {
-      {BMI088_GYRO_RANGE            , BMI088_GYRO_2000,
-       BMI088_GYRO_RANGE_ERROR},
-      {BMI088_GYRO_BANDWIDTH        , BMI088_GYRO_1000_116_HZ | BMI088_GYRO_BANDWIDTH_MUST_Set,
-       BMI088_GYRO_BANDWIDTH_ERROR},
-      {BMI088_GYRO_LPM1             , BMI088_GYRO_NORMAL_MODE,
-       BMI088_GYRO_LPM1_ERROR},
-      {BMI088_GYRO_CTRL             , BMI088_DRDY_ON,
-       BMI088_GYRO_CTRL_ERROR},
-      {BMI088_GYRO_INT3_INT4_IO_CONF, BMI088_GYRO_INT3_GPIO_PP | BMI088_GYRO_INT3_GPIO_LOW,
-       BMI088_GYRO_INT3_INT4_IO_CONF_ERROR},
-      {BMI088_GYRO_INT3_INT4_IO_MAP , BMI088_GYRO_DRDY_IO_INT3,
-       BMI088_GYRO_INT3_INT4_IO_MAP_ERROR}};
-  // clang-format on
-
-  // 写入配置并验证
-  for (int i = 0; i < BMI088_WRITE_GYRO_REG_NUM; i++) {
-    gyro_write_reg(gyro_cfgs[i].reg, gyro_cfgs[i].val);
-    delay_us_dwt(BMI088_COM_WAIT_US);
-    uint8_t verify = gyro_read_reg(gyro_cfgs[i].reg);
-    if (verify != gyro_cfgs[i].val)
-      return gyro_cfgs[i].errno;
-  }
-
-  return BMI088_NO_ERROR;
-}
-
-
-bmi088_err_t bmi088_init(void)
-{
-  dwt_init();
-
-  bmi088_err_t err;
-  if ((err = bmi088_accel_init()) != BMI088_NO_ERROR) {
-    return err;
-  }
-  if ((err = bmi088_gyro_init()) != BMI088_NO_ERROR)
-    return err;
-
-  return BMI088_NO_ERROR;
+  // 陀螺仪初始化
+  write_gyro_reg(BMI088_GYRO_SOFTRESET, BMI088_GYRO_SOFTRESET_VALUE);
+  HAL_Delay(30);
+  // 陀螺仪上电后自动处于 SPI 模式
+  // 显式指定陀螺仪量程为 +-2000deg
+  write_gyro_reg(BMI088_GYRO_RANGE, BMI088_GYRO_2000);
+  HAL_Delay(5);
 }
 
 
 void bmi088_read(float acc[3], float gyro[3], float *temp)
 {
-  uint8_t buf[8] = {0};
+  uint8_t buf[6] = {0};
 
-  acc_read_multi_reg(BMI088_ACCEL_XOUT_L, buf, 6);
+  read_acc_reg(BMI088_ACCEL_XOUT_L, buf, 6);
   for (int i = 0; i < 3; i++) {
     int16_t raw = (int16_t)(buf[2 * i + 1] << 8 | buf[2 * i]);
     acc[i]      = (float)raw * BMI088_ACCEL_3G_SEN;
@@ -315,17 +167,15 @@ void bmi088_read(float acc[3], float gyro[3], float *temp)
     acc[i] *= -1;
   }
 
-  gyro_read_multi_reg(BMI088_GYRO_CHIP_ID, buf, 8);
-  if (buf[0] == BMI088_GYRO_CHIP_ID_VALUE) {
-    for (int i = 0; i < 3; i++) {
-      int16_t raw = (int16_t)(buf[2 * i + 1] << 8 | buf[2 * i]);
-      gyro[i]     = (float)raw * BMI088_GYRO_2000_SEN;
-      // 从角度值转为弧度制
-      gyro[i] *= M_PI / 180.f;
-    }
+  read_gyro_reg(BMI088_GYRO_X_L, buf, 6);
+  for (int i = 0; i < 3; i++) {
+    int16_t raw = (int16_t)(buf[2 * i + 1] << 8 | buf[2 * i]);
+    gyro[i]     = (float)raw * BMI088_GYRO_2000_SEN;
+    // 从角度值转为弧度制
+    gyro[i] *= M_PI / 180.f;
   }
 
-  acc_read_multi_reg(BMI088_TEMP_M, buf, 2);
+  read_acc_reg(BMI088_TEMP_M, buf, 2);
   {
     int16_t raw = (int16_t)((buf[0] << 3) | (buf[1] >> 5));
     if (raw > 1023)

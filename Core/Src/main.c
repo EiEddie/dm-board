@@ -30,6 +30,7 @@
 /* USER CODE BEGIN Includes */
 #include <bsp/uart.h>
 #include <bsp/key.h>
+#include <bsp/imu.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,6 +114,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   bsp_uart_bind();
   bsp_key_init();
+  bsp_imu_init();
   /* USER CODE END 2 */
 
   /* Init scheduler */

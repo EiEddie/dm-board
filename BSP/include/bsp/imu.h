@@ -1,16 +1,15 @@
-#ifndef BSP_SRC_BMI088_H_
-#define BSP_SRC_BMI088_H_
-
-#include <stdint.h>
+#ifndef BSP_INCLUDE_BSP_IMU_H_
+#define BSP_INCLUDE_BSP_IMU_H_
 
 
-void bmi088_init();
+void bsp_imu_init();
+
 
 /**
  * @param acc  返回以 g 值为单位的加速度
  * @param gyro 返回以 s^-1 为单位, 即弧度制的角速度
  * @param temp 返回以摄氏度为单位的温度
  */
-void bmi088_read(float acc[3], float gyro[3], float *temp);
+void bsp_imu_read(float acc[3], float gyro[3], float *temp);
 
-#endif // BSP_SRC_BMI088_H_
+#endif // BSP_INCLUDE_BSP_IMU_H_
